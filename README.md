@@ -1,45 +1,130 @@
-Overview
-========
+# 🚀 dbt + Snowflake Orchestration with Airflow & Astronomer Cosmos
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+An enterprise-grade data engineering project orchestrating a **dbt (Data Build Tool)** analytics pipeline on **Snowflake** using **Apache Airflow** and **Astronomer Cosmos**, containerized with Docker via the **Astro CLI**.
 
-Project Contents
-================
+---
 
-Your Astro project contains the following files and folders:
+## 🏗️ Project Architecture & Directory Structure
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+```text
+DBT_SF_AIRFLOW/                             <-- Main workspace root
+├── capstone_ecommerce_analytics/           <-- Core dbt project
+│   ├── models/                             <-- staging, intermediate, and marts
+│   ├── macros/
+│   ├── tests/
+│   ├── dbt_project.yml                     <-- dbt project configuration
+│   └── profiles.yml
+├── dags/                                   <-- Airflow DAG definitions
+│   ├── staging_dag.py                      <-- Hourly Micro-DAG (Staging layer)
+│   ├── marts_dag.py                        <-- Daily Micro-DAG (Marts layer)
+│   └── dbt_cosmos_ecommerce_dag.py         <-- Full pipeline DAG
+├── Dockerfile                              <-- Custom Astro runtime image with dbt_venv
+├── requirements.txt                        <-- Python dependencies for Docker
+└── README.md                               <-- Project documentation
+```
 
-Deploy Your Project Locally
-===========================
+---
 
-Start Airflow on your local machine by running 'astro dev start'.
+## ✨ Features & Highlights
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+* **Dynamic Graph Rendering:** Powered by [Astronomer Cosmos](https://github.com/astronomer/astronomer-cosmos), dynamically translating dbt `ref()` dependencies directly into Airflow task DAGs without manual task mapping.
+* **Micro-DAG Decoupling Strategy:** Separates raw data staging ingestion (`@hourly`) from heavy analytics marts aggregation (`@daily`) to balance data freshness, lower Snowflake compute credit usage, and ensure failure isolation.
+* **Isolated Virtual Environment (`dbt_venv`):** Uses a dedicated virtual environment inside Docker for `dbt-snowflake` execution to avoid library dependency conflicts with core Airflow runtime modules.
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+---
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+## 🛠️ Prerequisites & Local Requirements
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+* **Docker Desktop:** Ensure Docker Desktop is installed and active on your machine.
+* **Astro CLI:** Installed on macOS using the official script:
+  ```bash
+  curl -sSL https://install.astronomer.io | sudo bash -s
+  ```
 
-Deploy Your Project to Astronomer
-=================================
+---
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+## ⚙️ Environment Configuration
 
-Contact
-=======
+### 1. `requirements.txt`
+Located at the workspace root:
+```text
+astronomer-cosmos
+apache-airflow-providers-snowflake
+dbt-snowflake
+```
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+### 2. `Dockerfile`
+Located at the workspace root:
+```dockerfile
+FROM quay.io/astronomer/astro-runtime:12.7.0
+
+# Create a dedicated virtual environment for dbt execution inside Docker
+RUN python -m venv /usr/local/airflow/dbt_venv && \
+    /usr/local/airflow/dbt_venv/bin/pip install --no-cache-dir dbt-snowflake
+```
+
+---
+
+## 🚀 Step-by-Step Setup & Execution
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/YOUR_GITHUB_USERNAME/dbt_sf_airflow.git
+cd dbt_sf_airflow
+```
+
+### Step 2: Start Airflow Containers
+Make sure Docker Desktop is running, then execute:
+```bash
+astro dev start
+```
+*(Note: Use `astro dev restart` if you modify `requirements.txt` or `Dockerfile` in the future).*
+
+### Step 3: Configure Snowflake Connection in Airflow
+1. Open **`http://localhost:8081`** in your browser.
+2. Log in with default credentials: **`admin` / `admin`**.
+3. Navigate to **Admin > Connections** and click the blue **`+`** button.
+4. Set up the connection:
+
+| Parameter | Value |
+| :--- | :--- |
+| **Connection Id** | `snowflake_default` |
+| **Connection Type** | `Snowflake` |
+| **Account** | `<your_snowflake_account_identifier>` |
+| **Login** | `<your_snowflake_username>` |
+| **Password** | `<your_snowflake_password>` |
+| **Database** | `CAPSTONE_ECOMMERCE_DB` |
+| **Schema** | `DEV` |
+| **Warehouse** | `COMPUTE_WH` |
+| **Role** | `ACCOUNTADMIN` |
+
+5. Click **Save**.
+
+---
+
+## 📊 Airflow DAG Workflow Overview
+
+| DAG File | Schedule | Models Included | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`staging_dag.py`** | `@hourly` | `path:models/staging` | Ingests and cleans raw transactional data frequently with low compute impact. |
+| **`marts_dag.py`** | `@daily` | `path:models/Intermediate`, `path:models/marts` | Performs heavy aggregations and business logic for reporting overnight. |
+| **`dbt_cosmos_ecommerce_dag.py`** | `@daily` | All models | Complete end-to-end dbt project execution. |
+
+---
+
+## 🔒 Security & Branch Protection
+
+Direct pushes to the `main` branch are restricted to maintain code quality and prevent unintended production changes.
+
+### Contribution Workflow:
+1. Create a feature branch locally:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+2. Commit and push your changes to GitHub:
+   ```bash
+   git add .
+   git commit -m "Add new staging model"
+   git push origin feature/your-feature-name
+   ```
+3. Open a **Pull Request (PR)** against `main` on GitHub for review and approval.
