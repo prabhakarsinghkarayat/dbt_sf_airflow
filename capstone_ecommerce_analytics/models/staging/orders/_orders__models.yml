@@ -1,0 +1,35 @@
+
+# Generic (built-in) primary-key tests for the orders staging models.
+# Same data_tests: + arguments: syntax as models/marts/_marts__models.yml.
+
+models:
+  - name: stg_orders__orders
+    description: One row per order (order header), lightly cleaned from raw_orders.orders.
+    columns:
+      - name: order_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_orders__order_items
+    description: One row per product line item within an order, lightly cleaned from raw_orders.order_items.
+    columns:
+      - name: order_item_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: unit_price
+        description: Price per unit at the time of order. Uses our custom non_negative generic test.
+        data_tests:
+          - non_negative
+
+  - name: stg_orders__order_payments
+    description: One row per payment attempt against an order, lightly cleaned from raw_orders.order_payments.
+    columns:
+      - name: payment_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null

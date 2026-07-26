@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: raw_orders
+    database: CAPSTONE_ECOMMERCE_DB
+    schema: RAW_ORDERS
+    description: >
+      Transaction data
+    
+    config:
+      loaded_at_field: updated_at
+      freshness:
+        warn_after:
+          count: 60
+          period: minute
+
+    tables:
+      - name: orders
+        description: One per customer order
+      
+      - name: order_items
+        description: One row per product
+
+      - name: order_payments
+        description: payment info

@@ -1,0 +1,37 @@
+version: 2
+
+# Generic (built-in) primary-key tests for the catalog staging models.
+# Same data_tests: + arguments: syntax as models/marts/_marts__models.yml.
+
+models:
+  - name: stg_catalog__customers
+    description: One row per registered customer, lightly cleaned from raw_catalog.customers.
+    columns:
+      - name: customer_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_catalog__products
+    description: One row per product in the catalog, lightly cleaned from raw_catalog.products.
+    columns:
+      - name: product_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_catalog__product_inventory
+    description: One row per (product, warehouse), lightly cleaned from raw_catalog.product_inventory.
+    columns:
+      - name: inventory_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: quantity_on_hand
+        description: Stock on hand for this product at this warehouse. Uses our custom non_negative generic test.
+        data_tests:
+          - not_null
+          - non_negative

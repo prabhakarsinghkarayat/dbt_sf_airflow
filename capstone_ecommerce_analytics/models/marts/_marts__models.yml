@@ -1,0 +1,33 @@
+models:
+  - name: fct_orders_analytics
+    description: >
+      One row per order -- the analytics table this capstone builds toward.
+      Joins order, customer, item-aggregate, and payment data into a single
+      wide table ready for a BI tool to query directly.
+
+    columns:
+      - name: order_id
+        description: Primary key. One row per order.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: Foreign key back to stg_catalog__customers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_catalog__customers')
+                field: customer_id
+
+      - name: order_status
+        description: Current status of the order.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['PLACED', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
+
+      - name: payment_status
+        description: >
+          Status of the resolved payment status
